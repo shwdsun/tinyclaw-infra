@@ -23,7 +23,7 @@ TinyClaw works fine without this. This module is for when "fine" isn't enough.
 
 Early stage. Tracking against a private fork of TinyClaw while the
 interface boundaries are being worked out. **Waiting on TinyClaw to land its provider interfaces.
-Expecting to open this repo by end of week, Feb 23 2026.**
+Expecting to open this repo by end of this week (March 1, 2026).**
 
 ## License
 
