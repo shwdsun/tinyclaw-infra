@@ -1,0 +1,32 @@
+FROM node:20-slim
+
+RUN apt-get update && \
+    apt-get install -y python3 make g++ git && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash -u 1001 tinyclaw
+
+WORKDIR /app
+
+COPY --from=tinyclaw package.json ./
+RUN npm install
+
+COPY --from=tinyclaw . .
+RUN npx tsc
+
+RUN npm install -g @anthropic-ai/claude-code
+
+RUN mkdir -p /data /workspaces && \
+    chown -R tinyclaw:tinyclaw /app /data /workspaces
+
+ENV TINYCLAW_HOME=/data
+ENV TINYCLAW_API_PORT=3777
+
+EXPOSE 3777
+
+USER tinyclaw
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+    CMD node -e "fetch('http://localhost:3777/api/queue/status').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"
+
+CMD ["node", "dist/queue-processor.js"]

@@ -1,0 +1,103 @@
+services:
+
+  # ── Core: queue processor + API server + SQLite ──────────────────────
+  core:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.core
+      additional_contexts:
+        tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
+    volumes:
+      - tinyclaw-data:/data
+      - workspaces:/workspaces
+    environment:
+      - TINYCLAW_HOME=/data
+      - TINYCLAW_API_PORT=3777
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    restart: unless-stopped
+
+  # ── Auth proxy ──────────────────────────────────────────────────────
+  proxy:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.proxy
+    ports:
+      - "${PROXY_PORT:-8080}:8080"
+    environment:
+      - API_KEY=${API_KEY}
+      - UPSTREAM=http://core:3777
+    depends_on:
+      core:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Discord client ─────────────────────────────────────────────────
+  discord:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.channel
+      additional_contexts:
+        tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
+      args:
+        CHANNEL: discord
+    # Share network namespace with core so localhost:3777 works
+    network_mode: "service:core"
+    volumes:
+      - tinyclaw-data:/data
+    environment:
+      - TINYCLAW_HOME=/data
+      - TINYCLAW_API_PORT=3777
+      - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
+    depends_on:
+      core:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: ["discord", "all"]
+
+  # ── Telegram client ────────────────────────────────────────────────
+  telegram:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.channel
+      additional_contexts:
+        tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
+      args:
+        CHANNEL: telegram
+    network_mode: "service:core"
+    volumes:
+      - tinyclaw-data:/data
+    environment:
+      - TINYCLAW_HOME=/data
+      - TINYCLAW_API_PORT=3777
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    depends_on:
+      core:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: ["telegram", "all"]
+
+  # ── WhatsApp client (needs chromium) ───────────────────────────────
+  whatsapp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.whatsapp
+      additional_contexts:
+        tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
+    network_mode: "service:core"
+    volumes:
+      - tinyclaw-data:/data
+      - whatsapp-session:/app/.tinyclaw/whatsapp-session
+    environment:
+      - TINYCLAW_HOME=/data
+      - TINYCLAW_API_PORT=3777
+    depends_on:
+      core:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: ["whatsapp", "all"]
+
+volumes:
+  tinyclaw-data:
+  workspaces:
+  whatsapp-session:
