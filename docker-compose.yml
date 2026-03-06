@@ -1,6 +1,6 @@
 services:
 
-  # ── Core: queue processor + API server + SQLite ──────────────────────
+  # ── Core: queue processor + API + SQLite ──────────────────────
   core:
     build:
       context: .
@@ -15,24 +15,29 @@ services:
       - TINYCLAW_API_PORT=3777
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    networks:
+      - core
     restart: unless-stopped
 
-  # ── Auth proxy ──────────────────────────────────────────────────────
-  proxy:
+  # ── Gateway: auth, proxy, task dispatch, metrics ─────────────
+  gateway:
     build:
       context: .
-      dockerfile: docker/Dockerfile.proxy
+      dockerfile: docker/Dockerfile.gateway
     ports:
-      - "${PROXY_PORT:-8080}:8080"
+      - "${GATEWAY_PORT:-8080}:8080"
     environment:
       - API_KEY=${API_KEY}
       - UPSTREAM=http://core:3777
+    networks:
+      - core
+      - workers
     depends_on:
       core:
         condition: service_healthy
     restart: unless-stopped
 
-  # ── Discord client ─────────────────────────────────────────────────
+  # ── Channel clients ─────────────────────────────────────────
   discord:
     build:
       context: .
@@ -41,7 +46,6 @@ services:
         tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
       args:
         CHANNEL: discord
-    # Share network namespace with core so localhost:3777 works
     network_mode: "service:core"
     volumes:
       - tinyclaw-data:/data
@@ -55,7 +59,6 @@ services:
     restart: unless-stopped
     profiles: ["discord", "all"]
 
-  # ── Telegram client ────────────────────────────────────────────────
   telegram:
     build:
       context: .
@@ -77,7 +80,6 @@ services:
     restart: unless-stopped
     profiles: ["telegram", "all"]
 
-  # ── WhatsApp client (needs chromium) ───────────────────────────────
   whatsapp:
     build:
       context: .
@@ -97,7 +99,71 @@ services:
     restart: unless-stopped
     profiles: ["whatsapp", "all"]
 
+  # ── Example worker (isolated agent execution) ────────────────
+  # Uncomment or define your own in docker-compose.override.yml.
+  #
+  # worker-coder:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile.worker
+  #   environment:
+  #     - GATEWAY_URL=http://gateway:8080
+  #     - API_KEY=${API_KEY}
+  #     - AGENT_ID=coder
+  #     - PROVIDER=anthropic
+  #     - MODEL=sonnet
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #   volumes:
+  #     - code-workspace:/workspace
+  #   networks:
+  #     - workers
+  #   depends_on:
+  #     gateway:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   profiles: ["workers"]
+  #
+  # worker-reviewer:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile.worker
+  #   environment:
+  #     - GATEWAY_URL=http://gateway:8080
+  #     - API_KEY=${API_KEY}
+  #     - AGENT_ID=reviewer
+  #     - PROVIDER=anthropic
+  #     - MODEL=sonnet
+  #     - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+  #   volumes:
+  #     - code-workspace:/workspace:ro    # read-only access
+  #   networks:
+  #     - workers
+  #   depends_on:
+  #     gateway:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   profiles: ["workers"]
+
+  # ── Monitoring ──────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - core
+      - workers
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    restart: unless-stopped
+    profiles: ["monitoring"]
+
 volumes:
   tinyclaw-data:
   workspaces:
   whatsapp-session:
+  prometheus-data:
+
+networks:
+  core:
+  workers:

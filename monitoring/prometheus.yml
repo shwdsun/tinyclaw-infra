@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: gateway
+    static_configs:
+      - targets: ['gateway:8080']
+    metrics_path: /metrics
+
+  # Add worker targets as you scale.
+  # - job_name: workers
+  #   static_configs:
+  #     - targets: ['worker-coder:9100', 'worker-reviewer:9100']
