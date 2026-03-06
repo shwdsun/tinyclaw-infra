@@ -47,23 +47,16 @@ cp .env.example .env
 # edit .env — set API_KEY, provider keys, bot tokens
 ```
 
-Start core + gateway:
+Start core, gateway, and Prometheus:
 
 ```bash
 docker compose up -d
 ```
 
-Enable a channel:
+Prometheus is on port 9090. Enable a channel:
 
 ```bash
 docker compose --profile telegram up -d
-```
-
-Enable monitoring:
-
-```bash
-docker compose --profile monitoring up -d
-# Prometheus at http://localhost:9090
 ```
 
 Verify:
@@ -214,11 +207,7 @@ The gateway exposes Prometheus metrics at `GET /metrics` (no auth).
 | `worker_tasks_total` | counter | Tasks processed by status |
 | `worker_busy` | gauge | 1 if processing, 0 if idle |
 
-Enable the monitoring profile to run Prometheus:
-
-```bash
-docker compose --profile monitoring up -d
-```
+Prometheus starts with `docker compose up -d` and scrapes the gateway at `gateway:8080/metrics`.
 
 ## Design decisions
 

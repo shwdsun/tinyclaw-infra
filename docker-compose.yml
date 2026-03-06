@@ -156,7 +156,6 @@ services:
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     restart: unless-stopped
-    profiles: ["monitoring"]
 
 volumes:
   tinyclaw-data:

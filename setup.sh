@@ -166,14 +166,8 @@ PROMETHEUS_PORT="9090"
 read -rp "Gateway port [8080]: " PORT_INPUT
 GATEWAY_PORT="${PORT_INPUT:-8080}"
 
-read -rp "Enable monitoring (Prometheus)? [y/N]: " ENABLE_MON
-MONITORING=false
-if [[ "$ENABLE_MON" =~ ^[yY] ]]; then
-    read -rp "Prometheus port [9090]: " PROM_INPUT
-    PROMETHEUS_PORT="${PROM_INPUT:-9090}"
-    MONITORING=true
-    echo -e "${GREEN}✓ Monitoring enabled on :${PROMETHEUS_PORT}${NC}"
-fi
+read -rp "Prometheus port [9090]: " PROM_INPUT
+PROMETHEUS_PORT="${PROM_INPUT:-9090}"
 echo ""
 
 cat > "$ENV_FILE" <<EOF
@@ -220,10 +214,6 @@ if [[ ! "$START_NOW" =~ ^[nN] ]]; then
     echo ""
     docker compose $PROFILES up -d
 
-    if [ "$MONITORING" = true ]; then
-        docker compose --profile monitoring up -d
-    fi
-
     echo ""
     echo "Waiting for services to become healthy..."
     sleep 5
@@ -256,13 +246,13 @@ echo -e "${GREEN}  Setup complete${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo "Commands:"
-echo -e "  ${GREEN}docker compose up -d${NC}                    Start core + gateway"
+echo -e "  ${GREEN}docker compose up -d${NC}                    Start core, gateway, Prometheus"
 echo -e "  ${GREEN}docker compose --profile telegram up -d${NC} Enable Telegram"
-echo -e "  ${GREEN}docker compose --profile monitoring up -d${NC} Enable Prometheus"
 echo -e "  ${GREEN}docker compose ps${NC}                       Check status"
 echo -e "  ${GREEN}docker compose logs -f core${NC}             View core logs"
 echo ""
-echo "API:"
+echo "API / UI:"
 echo -e "  ${GREEN}curl -H 'Authorization: Bearer $API_KEY' http://localhost:$GATEWAY_PORT/api/queue/status${NC}"
 echo -e "  ${GREEN}curl http://localhost:$GATEWAY_PORT/metrics${NC}"
+echo -e "  ${GREEN}http://localhost:$PROMETHEUS_PORT${NC}       Prometheus"
 echo ""
