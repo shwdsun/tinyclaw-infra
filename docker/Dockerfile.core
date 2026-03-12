@@ -9,12 +9,11 @@ RUN useradd -m -s /bin/bash -u 1001 tinyclaw
 WORKDIR /app
 
 COPY --from=tinyclaw package.json ./
+COPY --from=tinyclaw packages/ packages/
 RUN npm install
 
 COPY --from=tinyclaw . .
-RUN npx tsc
-
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm run build
 
 RUN mkdir -p /data /workspaces && \
     chown -R tinyclaw:tinyclaw /app /data /workspaces
@@ -29,4 +28,4 @@ USER tinyclaw
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
     CMD node -e "fetch('http://localhost:3777/api/queue/status').then(r=>{if(!r.ok)throw 1}).catch(()=>process.exit(1))"
 
-CMD ["node", "dist/queue-processor.js"]
+CMD ["node", "packages/main/dist/index.js"]

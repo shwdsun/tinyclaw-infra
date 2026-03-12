@@ -7,14 +7,15 @@ RUN apt-get update && \
 WORKDIR /app
 
 COPY --from=tinyclaw package.json ./
+COPY --from=tinyclaw packages/ packages/
 RUN npm install
 
 COPY --from=tinyclaw . .
-RUN npx tsc
+RUN npm run build
 
 ENV TINYCLAW_API_PORT=3777
 
 ARG CHANNEL=discord
-ENV CHANNEL_SCRIPT=dist/channels/${CHANNEL}-client.js
+ENV CHANNEL_SCRIPT=packages/channels/dist/${CHANNEL}.js
 
 CMD ["sh", "-c", "node $CHANNEL_SCRIPT"]

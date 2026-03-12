@@ -24,11 +24,12 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /app
 
 COPY --from=tinyclaw package.json ./
+COPY --from=tinyclaw packages/ packages/
 RUN npm install
 
 COPY --from=tinyclaw . .
-RUN npx tsc
+RUN npm run build
 
 ENV TINYCLAW_API_PORT=3777
 
-CMD ["node", "dist/channels/whatsapp-client.js"]
+CMD ["node", "packages/channels/dist/whatsapp.js"]

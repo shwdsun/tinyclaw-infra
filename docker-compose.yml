@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.core
+      network: host
       additional_contexts:
         tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
     volumes:
@@ -42,6 +43,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.channel
+      network: host
       additional_contexts:
         tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
       args:
@@ -63,6 +65,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.channel
+      network: host
       additional_contexts:
         tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
       args:
@@ -84,6 +87,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.whatsapp
+      network: host
       additional_contexts:
         tinyclaw: ${TINYCLAW_PATH:-../tinyclaw}
     network_mode: "service:core"

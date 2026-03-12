@@ -4,8 +4,6 @@ RUN apt-get update && \
     apt-get install -y python3 make g++ git && \
     rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @anthropic-ai/claude-code
-
 RUN useradd -m -s /bin/bash -u 1001 worker
 
 WORKDIR /app
